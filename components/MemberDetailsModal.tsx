@@ -1,3 +1,4 @@
+// MemberDetailsModal.tsx - Fixed version
 "use client"
 
 import React from "react"
@@ -24,7 +25,7 @@ interface SectionColors {
 }
 
 export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, onClose }) => {
-  const fadeAnim = new Animated.Value(0)
+  const fadeAnim = React.useRef(new Animated.Value(0)).current; // Use useRef for animation
   const { theme } = useTheme()
 
   const colors = {
@@ -55,36 +56,73 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, 
   const currentColors = colors[theme]
 
   React.useEffect(() => {
+    // Start animation when component mounts
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 300,
       useNativeDriver: true,
     }).start()
-  }, [])
+  }, [fadeAnim])
 
   const openSocialLink = (url: string) => {
-    Linking.openURL(url)
+    if (url) {
+      Linking.openURL(url).catch(err => {
+        console.error('Failed to open URL:', err);
+      });
+    }
+  }
+
+  const handleClose = () => {
+    // Animate out before closing
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      onClose();
+    });
   }
 
   return (
     <Animated.View style={[styles.modalInner, { opacity: fadeAnim }]}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
           <Ionicons name="close" size={28} color={currentColors.closeIconColor} />
         </TouchableOpacity>
+      </View>
 
+      <ScrollView
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        bounces={true}
+      >
         <View style={styles.modalPhotoContainer}>
-          <Image source={{ uri: member.photo }} style={styles.modalPhoto} />
+          <Image 
+            source={{ uri: member.photo }} 
+            style={styles.modalPhoto}
+           
+          />
         </View>
 
         <View style={styles.modalInfo}>
-          <Text style={[styles.modalName, { color: currentColors.nameColor }]}>{member.name}</Text>
-          <Text style={[styles.modalJobTitle, { color: currentColors.jobTitleColor }]}>{member.jobTitle}</Text>
-          <Text style={[styles.modalBio, { color: currentColors.bioColor }]}>{member.bio}</Text>
+          <Text style={[styles.modalName, { color: currentColors.nameColor }]}>
+            {member.name}
+          </Text>
+          <Text style={[styles.modalJobTitle, { color: currentColors.jobTitleColor }]}>
+            {member.jobTitle}
+          </Text>
+          <Text style={[styles.modalBio, { color: currentColors.bioColor }]}>
+            {member.bio}
+          </Text>
 
           <ContactSection member={member} colors={currentColors} />
           <SkillsSection skills={member.skills} colors={currentColors} />
-          <SocialSection socialLinks={member.socialLinks} onOpenSocialLink={openSocialLink} colors={currentColors} />
+          <SocialSection 
+            socialLinks={member.socialLinks} 
+            onOpenSocialLink={openSocialLink} 
+            colors={currentColors} 
+          />
         </View>
       </ScrollView>
     </Animated.View>
@@ -94,14 +132,18 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, 
 const ContactSection: React.FC<{ member: TeamMember; colors: SectionColors }> = ({ member, colors }) => (
   <View style={styles.contactSection}>
     <Text style={[styles.sectionTitle, { color: colors.sectionTitleColor }]}>Contact</Text>
-    <View style={styles.contactItem}>
-      <Ionicons name="mail" size={20} color={colors.contactIconColor} />
-      <Text style={[styles.contactText, { color: colors.contactText }]}>{member.email}</Text>
-    </View>
-    <View style={styles.contactItem}>
-      <Ionicons name="call" size={20} color={colors.contactIconColor} />
-      <Text style={[styles.contactText, { color: colors.contactText }]}>{member.phone}</Text>
-    </View>
+    {member.email && (
+      <View style={styles.contactItem}>
+        <Ionicons name="mail" size={20} color={colors.contactIconColor} />
+        <Text style={[styles.contactText, { color: colors.contactText }]}>{member.email}</Text>
+      </View>
+    )}
+    {member.phone && (
+      <View style={styles.contactItem}>
+        <Ionicons name="call" size={20} color={colors.contactIconColor} />
+        <Text style={[styles.contactText, { color: colors.contactText }]}>{member.phone}</Text>
+      </View>
+    )}
   </View>
 )
 
@@ -109,8 +151,8 @@ const SkillsSection: React.FC<{ skills: string[]; colors: SectionColors }> = ({ 
   <View style={styles.skillsSection}>
     <Text style={[styles.sectionTitle, { color: colors.sectionTitleColor }]}>Skills</Text>
     <View style={styles.skillsContainer}>
-      {skills.map((skill, index) => (
-        <View key={index} style={[styles.skillTag, { backgroundColor: colors.skillTagBackground }]}>
+      {skills?.map((skill, index) => (
+        <View key={`${skill}-${index}`} style={[styles.skillTag, { backgroundColor: colors.skillTagBackground }]}>
           <Text style={[styles.skillText, { color: colors.skillTextColor }]}>{skill}</Text>
         </View>
       ))}
@@ -126,34 +168,47 @@ const SocialSection: React.FC<{
   <View style={styles.socialSection}>
     <Text style={[styles.sectionTitle, { color: colors.sectionTitleColor }]}>Connect</Text>
     <View style={styles.socialButtonsContainer}>
-      <TouchableOpacity
-        style={[styles.socialButtonLarge, styles.linkedinButton]}
-        onPress={() => onOpenSocialLink(socialLinks.linkedin)}
-      >
-        <Ionicons name="logo-linkedin" size={24} color="white" />
-        <Text style={styles.socialButtonText}>LinkedIn</Text>
-      </TouchableOpacity>
+      {socialLinks?.linkedin && (
+        <TouchableOpacity
+          style={[styles.socialButtonLarge, styles.linkedinButton]}
+          onPress={() => onOpenSocialLink(socialLinks.linkedin)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="logo-linkedin" size={24} color="white" />
+          <Text style={styles.socialButtonText}>LinkedIn</Text>
+        </TouchableOpacity>
+      )}
 
-      <TouchableOpacity
-        style={[styles.socialButtonLarge, styles.twitterButton]}
-        onPress={() => onOpenSocialLink(socialLinks.twitter)}
-      >
-        <Ionicons name="logo-twitter" size={24} color="white" />
-        <Text style={styles.socialButtonText}>Twitter</Text>
-      </TouchableOpacity>
+      {socialLinks?.twitter && (
+        <TouchableOpacity
+          style={[styles.socialButtonLarge, styles.twitterButton]}
+          onPress={() => onOpenSocialLink(socialLinks.twitter)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="logo-twitter" size={24} color="white" />
+          <Text style={styles.socialButtonText}>Twitter</Text>
+        </TouchableOpacity>
+      )}
     </View>
   </View>
 )
 
 const styles = StyleSheet.create({
   modalInner: {
-    padding: 20,
     flex: 1,
+    paddingHorizontal: 20,
+  },
+  header: {
+    alignItems: 'flex-end',
+    paddingTop: 10,
+    paddingBottom: 5,
   },
   closeButton: {
-    alignSelf: "flex-end",
     padding: 8,
-    marginBottom: 10,
+    borderRadius: 20,
+  },
+  scrollContent: {
+    paddingBottom: 30,
   },
   modalPhotoContainer: {
     alignItems: "center",
@@ -163,6 +218,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
+    backgroundColor: '#f0f0f0', // Placeholder background
   },
   modalInfo: {
     alignItems: "center",
@@ -171,16 +227,19 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "bold",
     marginBottom: 8,
+    textAlign: 'center',
   },
   modalJobTitle: {
     fontSize: 18,
     marginBottom: 16,
+    textAlign: 'center',
   },
   modalBio: {
     fontSize: 16,
     textAlign: "center",
     lineHeight: 24,
     marginBottom: 24,
+    paddingHorizontal: 10,
   },
   contactSection: {
     width: "100%",
@@ -199,6 +258,7 @@ const styles = StyleSheet.create({
   contactText: {
     fontSize: 16,
     marginLeft: 12,
+    flex: 1,
   },
   skillsSection: {
     width: "100%",
@@ -220,10 +280,12 @@ const styles = StyleSheet.create({
   },
   socialSection: {
     width: "100%",
+    marginBottom: 20,
   },
   socialButtonsContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
+    gap: 10,
   },
   socialButtonLarge: {
     flexDirection: "row",
@@ -232,7 +294,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 25,
-    flex: 0.48,
+    flex: 1,
   },
   linkedinButton: {
     backgroundColor: "#0077B5",

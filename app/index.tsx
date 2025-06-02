@@ -1,3 +1,4 @@
+// HomeScreen.tsx - Fixed version
 "use client"
 
 import { useState } from "react"
@@ -28,7 +29,8 @@ export default function HomeScreen() {
       inputTextBackground: '#333',
       inputText: '#fff',
       placeholderText: '#999',
-      modalOverlay: 'rgba(0, 0, 0, 0.5)',
+      modalOverlay: 'rgba(0, 0, 0, 0.7)', // Increased opacity
+      modalBackground: '#2a2a2a',
     },
     light: {
       background: '#fff',
@@ -38,7 +40,8 @@ export default function HomeScreen() {
       inputTextBackground: '#eee',
       inputText: '#000',
       placeholderText: '#666',
-      modalOverlay: 'rgba(0, 0, 0, 0.3)',
+      modalOverlay: 'rgba(0, 0, 0, 0.5)', // Increased opacity
+      modalBackground: '#fff',
     },
   };
 
@@ -47,47 +50,19 @@ export default function HomeScreen() {
   const horizontalPadding = width * 0.05;
   const searchMarginHorizontal = width * 0.05;
 
-  // Filter team members based on search query
   const filteredTeamMembers = teamMembers.filter(member =>
     member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     member.jobTitle.toLowerCase().includes(searchQuery.toLowerCase())
-    // Add more fields to search if needed, e.g., member.skills.join(', ').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // State to hold team members fetched from the API
-  // const [teamData, setTeamData] = useState<TeamMember[]>([]);
-
-  // Example of fetching data from a mock endpoint using useEffect
-  /*
-  useEffect(() => {
-    const fetchTeamData = async () => {
-      try {
-        // Replace with your mock endpoint URL
-        const response = await fetch('https://my-mock-api.com/team');
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data: TeamMember[] = await response.json();
-        setTeamData(data);
-      } catch (error) {
-        console.error("Error fetching team data:", error);
-        // Handle error appropriately, e.g., set an error state
-      }
-    };
-
-    fetchTeamData();
-
-    // Optional: return a cleanup function if needed
-    // return () => { /* cleanup */ /* };
-  }, []); // Empty dependency array means this effect runs once on mount
-  */
-
   const openMemberDetails = (member: TeamMember) => {
+    console.log('Opening modal for:', member.name); // Debug log
     setSelectedMember(member)
     setModalVisible(true)
   }
 
   const closeMemberDetails = () => {
+    console.log('Closing modal'); // Debug log
     setModalVisible(false)
     setSelectedMember(null)
   }
@@ -97,12 +72,12 @@ export default function HomeScreen() {
   )
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: currentColors.background,
+    <SafeAreaView style={[styles.container, { 
+      backgroundColor: currentColors.background,
       paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     }]}>
       <Header />
 
-      {/* Search Input */}
       <TextInput
         style={[
           styles.searchInput,
@@ -121,7 +96,6 @@ export default function HomeScreen() {
         onBlur={() => setIsSearchFocused(false)}
       />
 
-      {/* Conditional rendering based on search results */}
       {filteredTeamMembers.length > 0 ? (
         <FlatList
           data={filteredTeamMembers}
@@ -132,15 +106,40 @@ export default function HomeScreen() {
         />
       ) : (
         <View style={styles.emptyStateContainer}>
-          <Text style={styles.emptyStateText}>No team members found.</Text>
+          <Text style={[styles.emptyStateText, { color: currentColors.textSecondary }]}>
+            No team members found.
+          </Text>
         </View>
       )}
 
-      <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={closeMemberDetails}>
-        <View style={[styles.modalOverlay, { backgroundColor: currentColors.modalOverlay, flex: 1 }]}>
-          <View style={[styles.modalContent, { backgroundColor: currentColors.cardBackground }]}>
-            {selectedMember && <MemberDetailsModal member={selectedMember} onClose={closeMemberDetails} />}
-          </View>
+      {/* Fixed Modal Structure */}
+      <Modal 
+        animationType="slide" 
+        transparent={true} 
+        visible={modalVisible} 
+        onRequestClose={closeMemberDetails}
+        statusBarTranslucent={true} // Add this for better Android support
+      >
+        <View style={[styles.modalOverlay, { backgroundColor: currentColors.modalOverlay }]}>
+          {/* Add touchable overlay to close modal when tapping outside */}
+          <TouchableOpacity 
+            style={styles.modalOverlayTouchable} 
+            activeOpacity={1} 
+            onPress={closeMemberDetails}
+          >
+            <TouchableOpacity 
+              style={[styles.modalContent, { backgroundColor: currentColors.modalBackground }]}
+              activeOpacity={1}
+              onPress={(e) => e.stopPropagation()} // Prevent closing when touching modal content
+            >
+              {selectedMember && (
+                <MemberDetailsModal 
+                  member={selectedMember} 
+                  onClose={closeMemberDetails} 
+                />
+              )}
+            </TouchableOpacity>
+          </TouchableOpacity>
         </View>
       </Modal>
     </SafeAreaView>
@@ -158,10 +157,24 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "flex-end",
   },
+  modalOverlayTouchable: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
   modalContent: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: "90%",
+    minHeight: "60%", // Increased minimum height for better content display
+    elevation: 5, // Android shadow
+    shadowColor: '#000', // iOS shadow
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    flex: 1, // Allow proper flex behavior for scrolling
   },
   searchInput: {
     padding: 12,
@@ -176,14 +189,13 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
     borderWidth: 0,
   },
-  emptyStateContainer: { // Style for the empty state container
+  emptyStateContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
-  emptyStateText: { // Style for the empty state text
-    color: '#999',
+  emptyStateText: {
     fontSize: 18,
     textAlign: 'center',
   },

@@ -10,6 +10,8 @@ A modern React Native application built with Expo Router showcasing team member 
 - **Cross-Platform**: Runs natively on iOS and Android
 - **Type-Safe**: Built with TypeScript for enhanced developer experience
 - **Modern Architecture**: Component-based design with separation of concerns
+- **Team Member Search**: Easily find members by name or job title
+- **Dark/Light Theme Support**: Switch between dark and light visual themes
 
 ## Prerequisites
 
@@ -222,9 +224,7 @@ git push origin feature/new-feature
 
 ### Planned Features
 
-- [ ] **Search & Filter**: Team member search functionality
 - [ ] **Department Grouping**: Organize by teams/departments
-- [ ] **Dark/Light Theme**: Theme switching capability
 - [ ] **Offline Support**: Local data persistence
 - [ ] **Push Notifications**: Team updates and announcements
 - [ ] **Analytics**: User interaction tracking
